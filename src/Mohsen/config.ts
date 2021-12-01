@@ -6,7 +6,7 @@ class Config {
     public INITIALBALANCE
     public LOWERBAND
     public GREENCANDLECOUNT
-    public UPPERBOUND
+    public UPPERBAND
     public USERSIFORSELLSIGNALS
     public STARTTIME
     public DATASTREAM
@@ -14,6 +14,7 @@ class Config {
     public SIGNALSTREAM
     public WALLETSTREAM
     public SYMBOL
+    public id
     public conflicts: string[] = []
     public info: string[] = []
     Validate() {
@@ -47,14 +48,14 @@ class Config {
             this.GREENCANDLECOUNT = 2
             this.info.push("green candle count not provided, using the default value of 2")
         }
-        if (this.UPPERBOUND) {
-            if (Number(this.UPPERBOUND)) {
-                this.UPPERBOUND == Number(this.UPPERBOUND)
+        if (this.UPPERBAND) {
+            if (Number(this.UPPERBAND)) {
+                this.UPPERBAND == Number(this.UPPERBAND)
             } else {
                 this.conflicts.push("upper band must be an integer")
             }
         } else {
-            this.UPPERBOUND = 90
+            this.UPPERBAND = 90
             this.info.push("upper band not provided, using the default value of 90")
         }
         if (this.USERSIFORSELLSIGNALS) {
@@ -117,9 +118,10 @@ class Config {
         this.USERSIFORSELLSIGNALS = a.USERSIFORSELLSIGNALS
         this.SIGNALSTREAM = a.SIGNALSTREAM
         this.STARTTIME = a.STARTTIME
-        this.UPPERBOUND = a.UPPERBOUND
+        this.UPPERBAND = a.UPPERBAND
         this.WALLETSTREAM = a.WALLETSTREAM
         this.SYMBOL = a.SYMBOL
+        this.id = a.id
     }
 }
 export const config = new Config()

@@ -21,7 +21,7 @@ if (Utils.getArgumentValue(args, "config")) {
     config.INITIALBALANCE = Utils.getArgumentValue(args, "initbalance");
     config.LOWERBAND = Utils.getArgumentValue(args, "lowerband");
     config.GREENCANDLECOUNT = Utils.getArgumentValue(args, "greencount");
-    config.UPPERBOUND = Utils.getArgumentValue(args, "upperband");
+    config.UPPERBAND = Utils.getArgumentValue(args, "upperband");
     config.USERSIFORSELLSIGNALS = Utils.getArgumentValue(args, "usersi");
     config.STARTTIME = Utils.getArgumentValue(args, "start")
     config.DATASTREAM = Utils.getArgumentValue(args, "datastream")
@@ -43,6 +43,8 @@ if (config.info.length > 0) {
 
     }
 }
+config.SYMBOL = "DOGE/USDT"
+const start = tomcat.utils.toTimeEx().addMinutes(-998 * 30)
 const bus = tomcat.Infrastructure.Bus.RedisBus.Bus
 tomcat.config.data.redis.publicUrl = "redis://localhost:6379"
 
@@ -54,7 +56,7 @@ let signal = ""
 let position = "sell"
 let signalCandle: CandleStickData
 
-pipeline.from('binance', 'spot', config.SYMBOL, '30m', config.DATASTREAM)
+pipeline.from('coinex', 'spot', config.SYMBOL, '30m', config.DATASTREAM)
     .add(rsi)
     .add(halfTrend, { stream: true, name: config.INDICATORSTREAM })
     .add(async (candle, THIS) => {
@@ -65,20 +67,31 @@ pipeline.from('binance', 'spot', config.SYMBOL, '30m', config.DATASTREAM)
             signal = candle.indicators.getValue<string>(hTSignal)
             signalCandle = candle
         }
-        if (signalCandle && candle.indicators.getNumberValue(rsi) && signal == 'buy') {
-            if (candle.indicators.getNumberValue(rsi) <= config.LOWERBAND) {
+        if (signalCandle && candle.indicators.getNumberValue(rsi)) {
+            if (candle.indicators.getNumberValue(rsi) <= config.LOWERBAND && signal == 'buy' && position != "buy") {
                 position = "buy"
                 wallet.buy(candle.close, candle.closeTime)
+                try {
+                    await wallet.buyEx(candle.close, candle.closeTime)
+                } catch (err) {
+                    console.log(err);
+                }
                 await stream.write(tomcat.utils.toTimeEx(candle.openTime).ticks, { signal: "buy", candle: candle })
             }
-            if (candle.indicators.getNumberValue(rsi) >= config.UPPERBOUND) {
+            if (position != "sell" && candle.indicators.getNumberValue(rsi) >= config.UPPERBAND) {
                 position = "sell"
                 wallet.sell(candle.close, candle.closeTime)
+                try{
+                    await wallet.sellEx()
+                }catch(err){
+                    console.log(err);
+                }
                 await stream.write(tomcat.utils.toTimeEx(candle.openTime).ticks, { signal: "sell", candle: candle })
             }
+
         }
     })
-pipeline.start(config.STARTTIME)
+pipeline.startEx(start)
 
 
 const CandleStream = tomcat.Domain.Streams.CandleStream
@@ -106,14 +119,17 @@ app.get("/trades", async (req, res) => {
     (req);
     const trades = []
     const result = await walletStream.getAll();
-    for (let i = 0; i < result.length; i++) {
-        const a = JSON.parse(result[i])
-        a["id"] = i
-        trades.push(a)
+    if (result && result.length > 0) {
+
+        for (let i = 0; i < result.length; i++) {
+            const a = JSON.parse(result[i])
+            a["id"] = i
+            trades.push(a)
+        }
     }
     res.json(trades)
 })
 app.listen(PORT, () => {
-    bus.publish("Mohsen/start", PORT)
+    bus.publish("bots/mohsen/controls/started", { port: PORT, id: config.id })
     console.log(`tomcat listening on port ${PORT} ...`);
 });
