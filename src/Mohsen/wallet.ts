@@ -5,6 +5,8 @@ export class Trade {
     constructor(public amount: number, public price: number, public side, public time: number, public balance: number, public pnl: number = 0, public fee: number = 0) {
     }
 }
+const bus = tomcat.Infrastructure.Bus.RedisBus.Bus
+tomcat.config.data.redis.publicUrl = "redis://localhost:6379"
 
 export class TradeCollection {
     public items: Trade[] = []
@@ -43,12 +45,20 @@ export class Wallet {
         this.trades.items.push(trade)
         this.stream.write(trade.time, trade)
     }
-    async buyEx(price, time) {
-        const balance = await this.ccxtExchange.getBalance()
-        await this.ccxtExchange.buyWithoutPrice("DOGE/USDT", balance["USDT"].free)
+    async buyEx(time) {
+        if (Math.abs(tomcat.utils.toTimeEx().ticks - time) < 15 * 60 * 1000) {
+            const balance = await this.ccxtExchange.getBalance()
+            await this.ccxtExchange.buyWithoutPrice("DOGE/USDT", balance["USDT"].free)
+            const balanceAfter = await this.ccxtExchange.getBalance()
+            bus.publish("bots/mohsen/wallet/buy", { doge: balanceAfter["DOGE"].free, usdt: balanceAfter["USDT"].free, time: new Date().toISOString() })
+        }
     }
-    async sellEx() {
-        const balance = await this.ccxtExchange.getBalance()
-        await this.ccxtExchange.sell("DOGE/USDT", balance["DOGE"].free)
+    async sellEx(time) {
+        if (Math.abs(tomcat.utils.toTimeEx().ticks - time) < 15 * 60 * 1000) {
+            const balance = await this.ccxtExchange.getBalance()
+            await this.ccxtExchange.sell("DOGE/USDT", balance["DOGE"].free)
+            const balanceAfter = await this.ccxtExchange.getBalance()
+            bus.publish("bots/mohsen/wallet/buy", { doge: balanceAfter["DOGE"].free, usdt: balanceAfter["USDT"].free, time: new Date().toISOString() })
+        }
     }
 }

@@ -3,7 +3,6 @@ import fs from 'fs'
 import tomcat from '@gostarehnegar/tomcat'
 import * as TalibIndicators from '@gostarehnegar/tomcat-indicators-talib'
 
-
 import { config } from './config'
 import { Mohsen, Utils } from './utils'
 import { Wallet } from './wallet'
@@ -35,7 +34,6 @@ if (config.conflicts.length > 0) {
     for (let i = 0; i < config.conflicts.length; i++) {
         console.error('\x1b[31m%s\x1b[0m', config.conflicts[i])
     }
-    // throw "resolve conflicts"
 }
 if (config.info.length > 0) {
     for (let i = 0; i < config.info.length; i++) {
@@ -69,21 +67,21 @@ pipeline.from('coinex', 'spot', config.SYMBOL, '30m', config.DATASTREAM)
         }
         if (signalCandle && candle.indicators.getNumberValue(rsi)) {
             if (candle.indicators.getNumberValue(rsi) <= config.LOWERBAND && signal == 'buy' && position != "buy") {
-                position = "buy"
                 wallet.buy(candle.close, candle.closeTime)
                 try {
-                    await wallet.buyEx(candle.close, candle.closeTime)
+                    await wallet.buyEx(candle.closeTime)
+                    position = "buy"
                 } catch (err) {
                     console.log(err);
                 }
                 await stream.write(tomcat.utils.toTimeEx(candle.openTime).ticks, { signal: "buy", candle: candle })
             }
             if (position != "sell" && candle.indicators.getNumberValue(rsi) >= config.UPPERBAND) {
-                position = "sell"
                 wallet.sell(candle.close, candle.closeTime)
-                try{
-                    await wallet.sellEx()
-                }catch(err){
+                try {
+                    await wallet.sellEx(candle.closeTime)
+                    position = "sell"
+                } catch (err) {
                     console.log(err);
                 }
                 await stream.write(tomcat.utils.toTimeEx(candle.openTime).ticks, { signal: "sell", candle: candle })
