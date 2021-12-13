@@ -7,7 +7,7 @@ import tomcat from "@gostarehnegar/tomcat"
             cfg.endpoint = "clinet";
             cfg.transports.websocket.url = `http://localhost:${port}/hub`;
         })
-        .addMeshService(service)
+        .addMeshService(null, null)
         .addMeshNode((cfg) => {
             cfg.executeservice = null
             cfg.queryService = null
