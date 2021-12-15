@@ -49,16 +49,14 @@ export class Wallet {
         if (Math.abs(tomcat.utils.toTimeEx().ticks - time) < 15 * 60 * 1000) {
             const balance = await this.ccxtExchange.getBalance()
             await this.ccxtExchange.buyWithoutPrice("DOGE/USDT", balance["USDT"].free)
-            const balanceAfter = await this.ccxtExchange.getBalance()
-            bus.publish("bots/mohsen/wallet/buy", { doge: balanceAfter["DOGE"].free, usdt: balanceAfter["USDT"].free, time: new Date().toISOString() })
+            bus.publish("bots/mohsen/wallet/buy", { usdt: balance["USDT"].free, time: new Date().toISOString() })
         }
     }
     async sellEx(time) {
         if (Math.abs(tomcat.utils.toTimeEx().ticks - time) < 15 * 60 * 1000) {
             const balance = await this.ccxtExchange.getBalance()
             await this.ccxtExchange.sell("DOGE/USDT", balance["DOGE"].free)
-            const balanceAfter = await this.ccxtExchange.getBalance()
-            bus.publish("bots/mohsen/wallet/buy", { doge: balanceAfter["DOGE"].free, usdt: balanceAfter["USDT"].free, time: new Date().toISOString() })
+            bus.publish("bots/mohsen/wallet/sell", { doge: balance["DOGE"].free, time: new Date().toISOString() })
         }
     }
 }
